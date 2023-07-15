@@ -20,19 +20,18 @@ type Controller struct {
 }
 
 type User struct {
-	Id      float64 `json:"id"`
-	User    string  `json:"user_key"`
+	Id      string  `json:"id"`
 	Balance float64 `json:"balance"`
 }
 
 //goland:noinspection ALL
 const (
 	createTable = `CREATE TABLE IF NOT EXISTS balance_checker (
-						id 			SERIAL	PRIMARY KEY NOT NULL, 
-						user_key 	VARCHAR UNIQUE 		NOT NULL,
+						id 			VARCHAR	PRIMARY KEY NOT NULL, 
 						balance 	REAL	 			NOT NULL)`
 
-	insertBalance = `INSERT INTO balance_checker (user_key, balance) VALUES ($1, $2)`
+	insertBalance = `INSERT INTO balance_checker (id, balance) VALUES ($1, $2) 
+						ON CONFLICT(id) DO UPDATE SET balance = $2`
 )
 
 func GetController(conf *config.Config) (*Controller, *sql.DB, error) {
@@ -51,13 +50,11 @@ func GetController(conf *config.Config) (*Controller, *sql.DB, error) {
 		return nil, nil, fmt.Errorf("ping db err: %s", err)
 	}
 
-	c := &Controller{db: db}
-
 	if _, err = db.Exec(createTable); err != nil {
 		return nil, nil, fmt.Errorf("create table err: %s", err)
 	}
 
-	return c, db, nil
+	return &Controller{db: db}, db, nil
 }
 
 func (c *Controller) AddBalance(aKey string, balance float64) error {
@@ -70,6 +67,6 @@ func (c *Controller) AddBalance(aKey string, balance float64) error {
 		}
 	}
 
-	log.Printf("balance add: %s %f", aKey, balance)
+	log.Printf("balance add/update: %s %f", aKey, balance)
 	return nil
 }

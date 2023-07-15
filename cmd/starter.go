@@ -14,10 +14,10 @@ import (
 func Start() error {
 	c, err := config.GetConfig()
 	if err != nil {
-		return fmt.Errorf("connect to selenium err: %s", err)
+		return fmt.Errorf("get config err: %s", err)
 	}
 
-	d, db, err := database.GetController(c)
+	dbc, db, err := database.GetController(c)
 	if err != nil {
 		return fmt.Errorf("connect to db err: %s", err)
 	}
@@ -26,12 +26,12 @@ func Start() error {
 		_ = db.Close()
 	}()
 
-	workerStart(c, d)
+	workerStart(c, dbc)
 
 	return nil
 }
 
-func workerStart(conf *config.Config, db *database.Controller) {
+func workerStart(conf *config.Config, dbc *database.Controller) {
 	user := make(chan database.User)
 	err := make(chan error)
 	urls := make(chan string)
@@ -43,8 +43,8 @@ func workerStart(conf *config.Config, db *database.Controller) {
 	go func(proxies chan string, listProxies []string, wg *sync.WaitGroup) {
 		defer wg.Done()
 
-		for _, proxy := range listProxies {
-			proxies <- proxy
+		for i := 0; i < len(listProxies) && i < conf.NumProxies; i++ {
+			proxies <- listProxies[i]
 		}
 
 		close(proxies)
@@ -66,14 +66,14 @@ func workerStart(conf *config.Config, db *database.Controller) {
 			select {
 			case u := <-user:
 				if u.Balance > 0 {
-					fmt.Println(u.User, u.Balance)
-					if err := db.AddBalance(u.User, u.Balance); err != nil {
-						log.Print(err)
+					fmt.Println(u.Id, u.Balance)
+					if err := dbc.AddBalance(u.Id, u.Balance); err != nil {
+						log.Printf("add balance err: %s", err)
 					}
 				}
 			case e := <-err:
-				if !strings.Contains(e.Error(), "urls is nil") {
-					log.Print(e)
+				if !strings.Contains(e.Error(), "urls are over") {
+					log.Printf("worker err: %s", e)
 				}
 			}
 		}

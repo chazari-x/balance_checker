@@ -4,3 +4,7 @@ db:
   user: "postgres"
   pass: "postgrespw"
   name: "postgres"
+
+timeout: 10
+
+numProxies: 1

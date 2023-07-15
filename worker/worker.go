@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -35,24 +36,58 @@ func GetNewWorker(c *config.Config, wg *sync.WaitGroup, proxy string, url chan s
 func (c *Controller) StartNew() {
 	c.wg.Add(1)
 	go func() {
-		defer c.wg.Done()
-		for url := range c.urls {
-			fmt.Println(url)
+		var timeouts int
 
-			resp, err := http.Get(url)
+		defer c.wg.Done()
+		for u := range c.urls {
+			var (
+				proxyURLParsed, _ = url.Parse(c.proxy)
+				proxy             = http.ProxyURL(proxyURLParsed)
+				timeout           = time.Duration(c.c.TimeOut) * time.Second
+				transport         = &http.Transport{
+					Proxy:               proxy,
+					TLSHandshakeTimeout: timeout,
+				}
+				client = &http.Client{Transport: transport, Timeout: timeout}
+			)
+
+			req, err := http.NewRequest("GET", u, nil)
 			if err != nil {
-				c.err <- err
+				c.err <- fmt.Errorf("http request err: %s", err)
 				return
+			}
+
+			resp, err := client.Do(req)
+			if err != nil {
+				if !strings.Contains(err.Error(), "context deadline exceeded") {
+					c.err <- fmt.Errorf("client do err: %s", err)
+					go func() {
+						c.urls <- u
+					}()
+					return
+				}
+
+				go func() {
+					c.urls <- u
+				}()
+
+				timeouts++
+				if timeouts > 10 {
+					c.err <- fmt.Errorf("client do err: %s %d: worker closed", err, timeouts)
+					return
+				}
+
+				c.err <- fmt.Errorf("client do: %s %d", err, timeouts)
+				continue
 			}
 
 			defer func() {
 				_ = resp.Body.Close()
 			}()
 
-			// Загружаем HTML документ с помощью goquery
 			doc, err := goquery.NewDocumentFromReader(resp.Body)
 			if err != nil {
-				c.err <- err
+				c.err <- fmt.Errorf("goquery new document from reader err: %s", err)
 				return
 			}
 
@@ -68,18 +103,16 @@ func (c *Controller) StartNew() {
 
 			balance, err := strconv.ParseFloat(strings.ReplaceAll(strBalance, ",", ""), 64)
 			if err != nil {
-				c.err <- err
+				c.err <- fmt.Errorf("strconv parse float err: %s", err)
 				return
 			}
 
 			c.user <- database.User{
-				User:    regexp.MustCompile(`users/\S+`).FindString(url)[6:],
+				Id:      regexp.MustCompile(`users/\S+`).FindString(u)[6:],
 				Balance: balance,
 			}
-
-			time.Sleep(time.Second)
 		}
 
-		c.err <- fmt.Errorf("urls is nil")
+		c.err <- fmt.Errorf("urls are over")
 	}()
 }

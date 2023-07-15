@@ -6,3 +6,8 @@ services:
       - POSTGRES_PASSWORD=postgrespw
     ports:
       - 5432:5432
+
+  worker:
+    image: "chazari/balance_checker:latest"
+    depends_on:
+      - postgres
