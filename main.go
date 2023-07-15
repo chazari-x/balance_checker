@@ -7,5 +7,8 @@ import (
 )
 
 func main() {
-	log.Print(cmd.Start())
+	err := cmd.Start()
+	if err != nil {
+		log.Print(err)
+	}
 }
