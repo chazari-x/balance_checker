@@ -9,6 +9,5 @@ services:
 
   worker:
     image: "chazari/balance_checker:latest"
-    restart: always
     depends_on:
       - postgres
