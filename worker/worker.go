@@ -54,6 +54,9 @@ func (c *Controller) StartNew() {
 			req, err := http.NewRequest("GET", u, nil)
 			if err != nil {
 				c.err <- fmt.Errorf("http request err: %s", err)
+				go func() {
+					c.urls <- u
+				}()
 				return
 			}
 
@@ -81,22 +84,21 @@ func (c *Controller) StartNew() {
 				continue
 			}
 
-			defer func() {
-				_ = resp.Body.Close()
-			}()
-
 			doc, err := goquery.NewDocumentFromReader(resp.Body)
 			if err != nil {
 				c.err <- fmt.Errorf("goquery new document from reader err: %s", err)
-				return
+				_ = resp.Body.Close()
+				continue
 			}
+
+			_ = resp.Body.Close()
 
 			element := doc.Find(`body > main > section:nth-child(2) > 
 				div.-mx-4.w-\[calc\(100\%\+32px\)\].overflow-x-auto.sm\:mx-0.sm\:w-full.rounded-lg.bg-gray-800.pb-4 > 
 				table > tbody > tr > td:nth-child(2) > div > span.mt-2.text-xxs.text-zinc-500`)
 			if element.Length() <= 0 {
 				c.err <- errors.New("element not found")
-				return
+				continue
 			}
 
 			strBalance := regexp.MustCompile(`[0-9]+,[0-9]+.[0-9]+`).FindString(element.Text())
@@ -104,7 +106,7 @@ func (c *Controller) StartNew() {
 			balance, err := strconv.ParseFloat(strings.ReplaceAll(strBalance, ",", ""), 64)
 			if err != nil {
 				c.err <- fmt.Errorf("strconv parse float err: %s", err)
-				return
+				continue
 			}
 
 			c.user <- database.User{

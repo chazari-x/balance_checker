@@ -61,7 +61,7 @@ func workerStart(conf *config.Config, dbc *database.Controller) {
 		close(urls)
 	}(urls, conf.URLs, &wg, proxies)
 
-	go func(wg *sync.WaitGroup) {
+	go func() {
 		for {
 			select {
 			case u := <-user:
@@ -77,7 +77,7 @@ func workerStart(conf *config.Config, dbc *database.Controller) {
 				}
 			}
 		}
-	}(&wg)
+	}()
 
 	for proxy := range proxies {
 		go func(proxy string, urls chan string, user chan database.User, err chan error, wg *sync.WaitGroup) {
