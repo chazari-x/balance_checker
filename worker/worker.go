@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"balance_checker/config"
+	"balance_checker/cmd"
 	"balance_checker/database"
 	"github.com/PuerkitoBio/goquery"
 )
@@ -21,7 +21,7 @@ type Worker interface {
 }
 
 type Controller struct {
-	c     *config.Config
+	c     *cmd.Config
 	wg    *sync.WaitGroup
 	proxy string
 	urls  chan string
@@ -29,7 +29,7 @@ type Controller struct {
 	err   chan error
 }
 
-func GetNewWorker(c *config.Config, wg *sync.WaitGroup, proxy string, url chan string, u chan database.User, err chan error) *Controller {
+func NewWorker(c *cmd.Config, wg *sync.WaitGroup, proxy string, url chan string, u chan database.User, err chan error) *Controller {
 	return &Controller{c: c, wg: wg, proxy: proxy, urls: url, user: u, err: err}
 }
 

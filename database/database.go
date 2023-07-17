@@ -7,15 +7,22 @@ import (
 	"log"
 	"time"
 
-	"balance_checker/config"
 	_ "github.com/lib/pq"
 )
+
+type Config struct {
+	Host string `yaml:"host"` // Хост
+	Port string `yaml:"port"` // Порт
+	User string `yaml:"user"` // Пользователь
+	Pass string `yaml:"pass"` // Пароль
+	Name string `yaml:"name"` // Название
+}
 
 type DB interface {
 	AddBalance(aKey string, balance float64) error
 }
 
-type Controller struct {
+type Store struct {
 	db *sql.DB
 }
 
@@ -34,16 +41,16 @@ const (
 						ON CONFLICT(id) DO UPDATE SET balance = $2`
 )
 
-func GetController(conf *config.Config) (*Controller, *sql.DB, error) {
+func NewStore(ctx context.Context, conf *Config) (*Store, *sql.DB, error) {
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		conf.DB.Host, conf.DB.Port, conf.DB.User, conf.DB.Pass, conf.DB.Name)
+		conf.Host, conf.Port, conf.User, conf.Pass, conf.Name)
 
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		return nil, nil, fmt.Errorf("open db err: %s", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
 	if err = db.PingContext(ctx); err != nil {
@@ -54,10 +61,10 @@ func GetController(conf *config.Config) (*Controller, *sql.DB, error) {
 		return nil, nil, fmt.Errorf("create table err: %s", err)
 	}
 
-	return &Controller{db: db}, db, nil
+	return &Store{db: db}, db, nil
 }
 
-func (c *Controller) AddBalance(aKey string, balance float64) error {
+func (c *Store) AddBalance(aKey string, balance float64) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 

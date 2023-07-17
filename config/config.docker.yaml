@@ -1,0 +1,14 @@
+db:
+  host: "0.0.0.0"
+  port: "5432"
+  user: "postgres"
+  pass: "postgrespw"
+  name: "postgres"
+
+timeout: 10
+
+numProxies: 1
+
+files:
+  input: "input.txt"
+  proxy: "files/proxy.txt"

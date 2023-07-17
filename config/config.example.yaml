@@ -7,4 +7,6 @@ db:
 
 timeout: 10
 
-numProxies: 1
+threads: 50
+
+input: "input.txt"

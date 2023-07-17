@@ -1,4 +1,4 @@
 *dev.yaml
 *proxies.txt
-./idea/
-./vendor/
+/.idea/
+/vendor/

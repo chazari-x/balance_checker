@@ -1,23 +1,18 @@
-package config
+package cmd
 
 import (
 	"bufio"
 	"fmt"
 	"os"
 
+	"balance_checker/database"
 	"gopkg.in/yaml.v3"
 )
 
 var C Config
 
 type Config struct {
-	DB struct {
-		Host string `yaml:"host"` // Хост
-		Port string `yaml:"port"` // Порт
-		User string `yaml:"user"` // Пользователь
-		Pass string `yaml:"pass"` // Пароль
-		Name string `yaml:"name"` // Название
-	} `yaml:"db"`
+	DB database.Config `yaml:"db"`
 
 	NumProxies int `yaml:"numProxies"`
 
@@ -25,11 +20,11 @@ type Config struct {
 
 	URLs []string
 
-	Proxies []string
+	Proxies []string // TODO remove
 }
 
 func GetConfig() (*Config, error) {
-	yamlFile, err := os.ReadFile("config/example.yaml")
+	yamlFile, err := os.ReadFile("config/config.yaml")
 	if err != nil {
 		return nil, fmt.Errorf("os read config file err: %s", err)
 	}
@@ -50,6 +45,7 @@ func GetConfig() (*Config, error) {
 }
 
 func getURLs() ([]string, error) {
+	// TODO вывести в конфиг путь
 	file, err := os.Open("config/urls.txt")
 
 	if err != nil {
@@ -75,6 +71,7 @@ func getURLs() ([]string, error) {
 }
 
 func getProxies() ([]string, error) {
+	// TODO вывести в конфиг путь
 	file, err := os.Open("config/proxies.txt")
 
 	if err != nil {
