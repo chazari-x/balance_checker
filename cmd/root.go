@@ -16,6 +16,8 @@ var rootCmd = &cobra.Command{
 	Run:   func(cmd *cobra.Command, args []string) {},
 }
 
+type contextKey string
+
 func Execute() {
 	ctx := context.Background()
 	f, err := os.Open("config/config.yaml")
@@ -30,6 +32,7 @@ func Execute() {
 		log.Fatalf("decode config file: %v", err)
 	}
 
+	ctx = context.WithValue(ctx, cfgKey, cfg)
 	err = rootCmd.ExecuteContext(ctx)
 	if err != nil {
 		panic(err)
