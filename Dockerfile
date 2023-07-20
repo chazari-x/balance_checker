@@ -19,7 +19,7 @@ WORKDIR /app
 COPY --from=builder /app/main /app/
 
 COPY ./config/config.docker.yaml /app/config/config.yaml
-COPY ./files/proxy.txt /app/files/proxy.txt
+COPY ./files/ /app/files/
 RUN mkdir -p /app/files && chown -R ledger:ledger /app/files
 RUN chown ledger:ledger /app/main
 RUN chmod +x /app/main

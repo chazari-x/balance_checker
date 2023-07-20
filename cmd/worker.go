@@ -19,6 +19,8 @@ func init() {
 		Short: "Worker",
 		Long:  "Worker",
 		Run: func(cmd *cobra.Command, args []string) {
+			log.Println("starting..")
+
 			ctx := cmd.Context()
 			cfg := configFromContext(ctx)
 
@@ -44,13 +46,11 @@ func init() {
 
 			newWorker := worker.NewWorker(&cfg.WorkerConfig, &wg, userCh, errCh, proxyStore, inputStore)
 
-			wg.Add(1)
 			go func() {
-				defer wg.Done()
 				for {
 					select {
 					case u := <-userCh:
-						if err := outputStore.Write(fmt.Sprintf("%s, %f", u.Id, u.Balance)); err != nil {
+						if err := outputStore.Write(fmt.Sprintf("%s, %.2f", u.Id, u.Balance)); err != nil {
 							log.Printf("write err: %s", err)
 						}
 					case e := <-errCh:

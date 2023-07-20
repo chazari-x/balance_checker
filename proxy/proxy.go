@@ -41,8 +41,10 @@ func NewStore(cfg Config) (*Store, error) {
 func (s *Store) Get() *http.Transport {
 	s.m.Lock()
 
-	if s.i > len(s.items) {
+	if s.i >= len(s.items)-1 {
 		s.i = 0
+	} else {
+		s.i++
 	}
 
 	pr := s.items[s.i].Value
@@ -75,7 +77,9 @@ func (s *Store) uploadFromFile() error {
 		return fmt.Errorf("open proxy file: %v", err)
 	}
 
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 
 	proxyList := make([]Proxy, 0)
 	scanner := bufio.NewScanner(f)

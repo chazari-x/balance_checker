@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 )
@@ -43,14 +44,21 @@ func (s *Store) upload() error {
 
 	f, err := os.Open(s.config.File)
 	if err != nil {
-		return fmt.Errorf("open proxy file: %v", err)
+		return fmt.Errorf("open input file: %v", err)
 	}
 
 	go func(f *os.File) {
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 
 		scanner := bufio.NewScanner(f)
+		i := 0
 		for scanner.Scan() {
+			i++
+			if i%1000 == 0 {
+				log.Printf("current line %d", i)
+			}
 			u := URL{Value: scanner.Text()}
 			s.Items <- u
 		}

@@ -1,4 +1,4 @@
-*dev.yaml
-*proxy.txt
 /.idea/
 /vendor/
+*proxy*.txt
+*output.txt

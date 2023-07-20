@@ -42,13 +42,15 @@ func (c *Controller) Start() {
 	c.wg.Add(1)
 	go func() {
 		defer c.wg.Done()
+
+		timeout := time.Duration(c.c.TimeOut) * time.Second
+		client := &http.Client{Transport: nil, Timeout: timeout}
+
 	LOOP:
 		var timeouts int
 
-		timeout := time.Duration(c.c.TimeOut) * time.Second
 		transport := c.proxyStore.Get()
 		transport.TLSHandshakeTimeout = timeout
-		client := &http.Client{Transport: transport, Timeout: timeout}
 
 	OUT:
 		for {
@@ -56,7 +58,9 @@ func (c *Controller) Start() {
 			case u := <-c.inputStore.Items:
 				req, err := http.NewRequest("GET", fmt.Sprintf("https://dydx.l2beat.com/users/%s", u.Value), nil)
 				if err != nil {
-					c.err <- fmt.Errorf("http request err: %s", err)
+					go func() {
+						c.err <- fmt.Errorf("http request err: %s", err)
+					}()
 					go func() {
 						c.inputStore.Items <- u
 					}()
@@ -66,7 +70,9 @@ func (c *Controller) Start() {
 				resp, err := client.Do(req)
 				if err != nil {
 					if !strings.Contains(err.Error(), "context deadline exceeded") {
-						c.err <- fmt.Errorf("client do err: %s", err)
+						go func() {
+							c.err <- fmt.Errorf("client do err: %s. Changing the proxy", err)
+						}()
 						go func() {
 							c.inputStore.Items <- u
 						}()
@@ -78,19 +84,43 @@ func (c *Controller) Start() {
 					}()
 
 					timeouts++
-					if timeouts > 10 {
-						c.err <- fmt.Errorf("client do err: %s %d: worker closed", err, timeouts)
+					if timeouts >= 10 {
+						go func() {
+							c.err <- fmt.Errorf("client do err: %s. %d: changing the proxy", err, timeouts)
+						}()
 						goto LOOP
 					}
 
-					c.err <- fmt.Errorf("client do: %s %d", err, timeouts)
+					//c.err <- fmt.Errorf("client do: %s %d", err, timeouts)
 					continue
 				}
 
 				doc, err := goquery.NewDocumentFromReader(resp.Body)
 				if err != nil {
-					c.err <- fmt.Errorf("goquery new document from reader err: %s", err)
-					_ = resp.Body.Close()
+					if !strings.Contains(err.Error(), "context deadline exceeded") {
+						go func() {
+							c.err <- fmt.Errorf("goquery new document from reader err: %s", err)
+						}()
+						_ = resp.Body.Close()
+						go func() {
+							c.inputStore.Items <- u
+						}()
+						continue
+					}
+
+					go func() {
+						c.inputStore.Items <- u
+					}()
+
+					timeouts++
+					if timeouts >= 10 {
+						go func() {
+							c.err <- fmt.Errorf("client do err: %s. %d: changing the proxy", err, timeouts)
+						}()
+						goto LOOP
+					}
+
+					//c.err <- fmt.Errorf("client do: %s %d", err, timeouts)
 					continue
 				}
 
@@ -100,7 +130,9 @@ func (c *Controller) Start() {
 				div.-mx-4.w-\[calc\(100\%\+32px\)\].overflow-x-auto.sm\:mx-0.sm\:w-full.rounded-lg.bg-gray-800.pb-4 > 
 				table > tbody > tr > td:nth-child(2) > div > span.mt-2.text-xxs.text-zinc-500`)
 				if element.Length() <= 0 {
-					c.err <- errors.New("element not found")
+					go func() {
+						c.err <- errors.New("element not found")
+					}()
 					continue
 				}
 
@@ -108,7 +140,9 @@ func (c *Controller) Start() {
 
 				balance, err := strconv.ParseFloat(strings.ReplaceAll(strBalance, ",", ""), 64)
 				if err != nil {
-					c.err <- fmt.Errorf("strconv parse float err: %s", err)
+					go func() {
+						c.err <- fmt.Errorf("strconv parse float err: %s", err)
+					}()
 					continue
 				}
 

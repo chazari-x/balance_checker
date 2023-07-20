@@ -5,8 +5,9 @@ input:
   file: "files/input.txt"
 
 output:
-  file: "files/output.txt"
+  dir: "files"
+  file: "output.txt"
 
 worker:
   timeout: 10
-  threads: 50
+  threads: 1
