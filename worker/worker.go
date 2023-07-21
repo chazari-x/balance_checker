@@ -142,9 +142,9 @@ func (c *Controller) Start() {
 					continue
 				}
 
-				strBalance := regexp.MustCompile(`[0-9]+,[0-9]+.[0-9]+`).FindString(element.Text())
+				strBalance := regexp.MustCompile(`-?\$[0-9,]+.?[0-9]{0,2}`).FindString(element.Text())
 
-				balance, err := strconv.ParseFloat(strings.ReplaceAll(strBalance, ",", ""), 64)
+				balance, err := strconv.ParseFloat(strings.ReplaceAll(strings.ReplaceAll(strBalance, "$", ""), ",", ""), 64)
 				if err != nil {
 					go func() {
 						c.err <- fmt.Errorf("strconv parse float err: %s", err)
