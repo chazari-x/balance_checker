@@ -51,6 +51,7 @@ func (c *Controller) Start() {
 
 		transport := c.proxyStore.Get()
 		transport.TLSHandshakeTimeout = timeout
+		client.Transport = transport
 
 	OUT:
 		for {

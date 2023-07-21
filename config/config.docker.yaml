@@ -10,4 +10,4 @@ output:
 
 worker:
   timeout: 10
-  threads: 50
+  threads: 800
