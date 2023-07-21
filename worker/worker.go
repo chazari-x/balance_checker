@@ -44,14 +44,13 @@ func (c *Controller) Start() {
 		defer c.wg.Done()
 
 		timeout := time.Duration(c.c.TimeOut) * time.Second
-		client := &http.Client{Transport: nil, Timeout: timeout}
 
 	LOOP:
 		var timeouts int
 
 		transport := c.proxyStore.Get()
 		transport.TLSHandshakeTimeout = timeout
-		client.Transport = transport
+		client := &http.Client{Transport: transport, Timeout: timeout}
 
 	OUT:
 		for {
@@ -92,7 +91,6 @@ func (c *Controller) Start() {
 						goto LOOP
 					}
 
-					//c.err <- fmt.Errorf("client do: %s %d", err, timeouts)
 					continue
 				}
 
@@ -129,7 +127,6 @@ func (c *Controller) Start() {
 						goto LOOP
 					}
 
-					//c.err <- fmt.Errorf("client do: %s %d", err, timeouts)
 					continue
 				}
 
