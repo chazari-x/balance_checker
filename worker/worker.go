@@ -95,6 +95,14 @@ func (c *Controller) Start() {
 					continue
 				}
 
+				if resp.StatusCode != 200 {
+					go func() {
+						c.err <- fmt.Errorf(resp.Status)
+					}()
+
+					break OUT
+				}
+
 				doc, err := goquery.NewDocumentFromReader(resp.Body)
 				if err != nil {
 					if !strings.Contains(err.Error(), "context deadline exceeded") {
@@ -152,7 +160,7 @@ func (c *Controller) Start() {
 						Balance: balance,
 					}
 				}
-			case <-time.After(time.Second * 30):
+			case <-time.After(time.Second * 15):
 				break OUT
 			}
 
