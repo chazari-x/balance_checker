@@ -132,12 +132,12 @@ func (c *Controller) Start() {
 
 				_ = resp.Body.Close()
 
-				selector := `tr:nth-child(%d) > td:nth-child(2) > div > span.mt-2.text-xxs.text-zinc-500`
+				selector := `body > main > section:nth-child(2) > 
+					div.-mx-4.w-\[calc\(100\%%\+32px\)\].overflow-x-auto.sm\:mx-0.sm\:w-full.rounded-lg.bg-gray-800.pb-4 > 
+					table > tbody > tr:nth-child(%d) > td:nth-child(2) > div > span.mt-2.text-xxs.text-zinc-500`
 				var allBalance float64
 				for i := 1; ; i++ {
-					element := doc.Find(`body > main > section:nth-child(2) > 
-					div.-mx-4.w-\[calc\(100\%\+32px\)\].overflow-x-auto.sm\:mx-0.sm\:w-full.rounded-lg.bg-gray-800.pb-4 > 
-					table > tbody > ` + fmt.Sprintf(selector, i))
+					element := doc.Find(fmt.Sprintf(selector, i))
 					if element.Length() <= 0 {
 						if i == 1 {
 							go func() {
