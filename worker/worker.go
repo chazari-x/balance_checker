@@ -132,30 +132,40 @@ func (c *Controller) Start() {
 
 				_ = resp.Body.Close()
 
-				element := doc.Find(`body > main > section:nth-child(2) > 
-				div.-mx-4.w-\[calc\(100\%\+32px\)\].overflow-x-auto.sm\:mx-0.sm\:w-full.rounded-lg.bg-gray-800.pb-4 > 
-				table > tbody > tr > td:nth-child(2) > div > span.mt-2.text-xxs.text-zinc-500`)
-				if element.Length() <= 0 {
-					go func() {
-						c.err <- errors.New("element not found")
-					}()
-					continue
+				selector := `tr:nth-child(%d) > td:nth-child(2) > div > span.mt-2.text-xxs.text-zinc-500`
+				var allBalance float64
+				for i := 1; ; i++ {
+					element := doc.Find(`body > main > section:nth-child(2) > 
+					div.-mx-4.w-\[calc\(100\%\+32px\)\].overflow-x-auto.sm\:mx-0.sm\:w-full.rounded-lg.bg-gray-800.pb-4 > 
+					table > tbody > ` + fmt.Sprintf(selector, i))
+					if element.Length() <= 0 {
+						if i == 1 {
+							go func() {
+								c.err <- errors.New("element not found")
+							}()
+							continue OUT
+						} else {
+							break
+						}
+					}
+
+					strBalance := regexp.MustCompile(`-?\$[0-9,]+.?[0-9]{0,2}`).FindString(element.Text())
+
+					balance, err := strconv.ParseFloat(strings.ReplaceAll(strings.ReplaceAll(strBalance, "$", ""), ",", ""), 64)
+					if err != nil {
+						go func() {
+							c.err <- fmt.Errorf("strconv parse float err: %s", err)
+						}()
+						continue
+					}
+
+					allBalance += balance
 				}
 
-				strBalance := regexp.MustCompile(`-?\$[0-9,]+.?[0-9]{0,2}`).FindString(element.Text())
-
-				balance, err := strconv.ParseFloat(strings.ReplaceAll(strings.ReplaceAll(strBalance, "$", ""), ",", ""), 64)
-				if err != nil {
-					go func() {
-						c.err <- fmt.Errorf("strconv parse float err: %s", err)
-					}()
-					continue
-				}
-
-				if balance > 0 {
+				if allBalance > 0 {
 					c.user <- User{
 						Id:      u.Value,
-						Balance: balance,
+						Balance: allBalance,
 					}
 				}
 			case <-time.After(time.Second * 15):
