@@ -3,3 +3,5 @@ services:
   worker:
     image: "chazari/balance_checker:latest"
     command: [ "/app/main", "worker" ]
+    volumes:
+      - ./files:/app/files
