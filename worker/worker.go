@@ -99,7 +99,7 @@ func (c *Controller) Start() {
 						c.err <- fmt.Errorf(resp.Status)
 					}()
 
-					break OUT
+					continue
 				}
 
 				doc, err := goquery.NewDocumentFromReader(resp.Body)
