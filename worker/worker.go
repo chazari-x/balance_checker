@@ -95,6 +95,14 @@ func (c *Controller) Start() {
 				}
 
 				if resp.StatusCode != 200 {
+					if resp.StatusCode == 404 {
+						go func() {
+							c.err <- fmt.Errorf("%s: %s", resp.Status, fmt.Sprintf("https://dydx.l2beat.com/search?query=%s", u.Value))
+						}()
+
+						continue
+					}
+
 					go func() {
 						c.err <- fmt.Errorf(resp.Status)
 					}()
