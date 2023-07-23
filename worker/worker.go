@@ -56,7 +56,7 @@ func (c *Controller) Start() {
 		for {
 			select {
 			case u := <-c.inputStore.Items:
-				req, err := http.NewRequest("GET", fmt.Sprintf("https://dydx.l2beat.com/users/%s", u.Value), nil)
+				req, err := http.NewRequest("GET", fmt.Sprintf("https://dydx.l2beat.com/search?query=%s", u.Value), nil)
 				if err != nil {
 					go func() {
 						c.err <- fmt.Errorf("http request err: %s", err)
